@@ -1,0 +1,38 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": [
+    "ForEach",
+    "AWS::Serverless-2016-10-31"
+  ],
+  "Description": "Uses the macros.",
+  "Parameters": {
+    "ListA": {
+        "Type": "CommaDelimitedList",
+        "Default": "a, b, c"
+    },
+    "ListB": {
+        "Type": "CommaDelimitedList",
+        "Default": "X, YY, ZZZ"
+    }
+  },
+  "Resources": {
+    "A%d": {
+        "Type": "AWS::S3::Bucket",
+        "Properties": {
+            "Name": "random-bucket-for-lee-%v"
+        },
+        "ForEach": "ListA"
+    },
+    "B%v": {
+        "Type": "AWS::Serverless::SimpleTable",
+        "DependsOn": [ "A%d" ],
+        "Properties": {
+            "PrimaryKey": {
+                "Type": "String",
+                "Name": "table-%d-key-%v"
+            }
+        },
+        "ForEach": "ListA"
+    }
+  }
+}
