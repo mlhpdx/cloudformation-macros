@@ -26,7 +26,7 @@ public class Function
             var region = request.TryGetPropertyValue("region", out var d) ? d as JsonValue 
                 : throw new InvalidDataException("Request is missing region.");
 
-            var account = request.TryGetPropertyValue("account", out var b) == true ? b as JsonValue 
+            var account = request.TryGetPropertyValue("accountId", out var b) == true ? b as JsonValue 
                 : throw new InvalidDataException("Request is missing account.");
                             
             var fragment = request.TryGetPropertyValue("fragment", out var o) == true ? o as JsonObject 
