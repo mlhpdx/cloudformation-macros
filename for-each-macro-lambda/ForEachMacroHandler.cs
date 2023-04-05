@@ -2,30 +2,25 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Amazon.Lambda.Core;
-using Cppl.Utilities.AWS;
 
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 
 namespace Cppl.ForEachMacro;
 
 public static class Extensions {
-    public static JsonArray ToJsonArray(this IEnumerable<MimeKit.InternetAddress> addresses) {
-        return addresses.Select(a => a.ToString()).ToJsonArray();
-    }
-
-    public static JsonArray ToJsonArray(this IEnumerable<string> strings) {
-        return new JsonArray(strings.Select(s => JsonValue.Create(s)).ToArray());
-    }
 }
 
 public class Function
 {
     static Function() { }
     
-    public Function() : this() { /* start X-Ray here */ }
+    public Function() { /* start X-Ray here */ }
 
     public async Task<JsonObject> FunctionHandler(JsonObject request, ILambdaContext context)
     {
+        var request_id = request?.TryGetPropertyValue("requestId", out var r) == true ? (string?)(r as JsonValue)
+            : throw new InvalidDataException("Request is missing requestId.");
+
         try {
             var region = request.TryGetPropertyValue("region", out var d) ? d as JsonValue 
                 : throw new InvalidDataException("Request is missing region.");
@@ -36,19 +31,38 @@ public class Function
             var fragment = request.TryGetPropertyValue("fragment", out var o) == true ? o as JsonObject 
                 : throw new InvalidDataException("Request is missing fragment.");
 
-            var template_parameters = request.TryGetPropertyValue("templateParameterValues", out var p) ? p as JsonObject
+            var template_parameters = request.TryGetPropertyValue("templateParameterValues", out var tp) ? tp as JsonObject
                 : throw new InvalidDataException("Request is missing templateParameterValues.");
 
-            var macro_parameters = request.TryGetPropertyValue("params", out var p) ? p as JsonObject
+            var macro_parameters = request.TryGetPropertyValue("params", out var mp) ? mp as JsonObject
                 : throw new InvalidDataException("Request is missing params (macro parameters).");
 
-            var transform_id = bucket?.TryGetPropertyValue("transformId", out var t) == true ? (string?)(t as JsonValue)
+            var transform_id = request?.TryGetPropertyValue("transformId", out var t) == true ? (string?)(t as JsonValue)
                 : throw new InvalidDataException("Request is missing transformId.");
             
-            var request_id = bucket?.TryGetPropertyValue("requestId", out var r) == true ? (string?)(r as JsonValue)
-                : throw new InvalidDataException("Request is missing requestId.");
-
             await Console.Out.WriteLineAsync($"\nRequest ID {request_id}\nTransform ID: {transform_id}");
+
+            var resources = fragment!.TryGetPropertyValue("Resources", out var rs) ? (rs as JsonObject)! 
+                : throw new InvalidDataException("Request fragment is missing the Resources property."); 
+
+            foreach (var kv in resources!.ToArray()) {
+                var name = kv.Key;
+                var resource = kv.Value as JsonObject;
+                if (resource!.ContainsKey("ForEach")) {
+                    // value must be the name of a parameter that is a list of strings
+                    resources.Remove(name);
+                    resource.Remove("ForEach", out var fe);
+
+                    var text = resource.ToString();
+
+                    var parameter = (string)fe!;
+                    var list = (string)template_parameters![parameter]!;
+                    foreach((string v, int i) in list.Split(",", StringSplitOptions.RemoveEmptyEntries).Select((v, i) => (v, i))) {
+                        text.Replace("%d", $"{i}").Replace("%v", v.Trim());
+                        resources[$"{name}i"] = JsonObject.Parse(text);
+                    }
+                }
+            }
 
             return new() {
                 [ "requestId" ] = $"{request_id}",
