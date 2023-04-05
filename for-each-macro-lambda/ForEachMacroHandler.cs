@@ -58,8 +58,8 @@ public class Function
                     var parameter = (string)fe!;
                     var list = (string)template_parameters![parameter]!;
                     foreach((string v, int i) in list.Split(",", StringSplitOptions.RemoveEmptyEntries).Select((v, i) => (v, i))) {
-                        text.Replace("%d", $"{i}").Replace("%v", v.Trim());
-                        resources[$"{name}i"] = JsonObject.Parse(text);
+                        var instance = text.Replace("%d", $"{i}").Replace("%v", v.Trim());
+                        resources[$"{name}i"] = JsonObject.Parse(instance);
                     }
                 }
             }
