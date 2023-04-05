@@ -58,8 +58,8 @@ public class Function
                     var text = resource.ToString();
 
                     var parameter = (string)fe!;
-                    var list = (string)template_parameters![parameter]!;
-                    foreach((string v, int i) in list.Split(",", StringSplitOptions.RemoveEmptyEntries).Select((v, i) => (v, i))) {
+                    var list = template_parameters![parameter]! as JsonArray;
+                    foreach((string v, int i) in list!.Select((v, i) => ((string)v!, i))) {
                         var instance = text.MakeSubstitutions(i, v);
                         resources[name.MakeSubstitutions(i, v)] = JsonObject.Parse(instance);
                     }
