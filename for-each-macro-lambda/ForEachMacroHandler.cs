@@ -42,6 +42,7 @@ public class Function
                 : throw new InvalidDataException("Request is missing transformId.");
             
             await Console.Out.WriteLineAsync($"\nRequest ID {request_id}\nTransform ID: {transform_id}");
+            await Console.Out.WriteLineAsync($"\nFragment {fragment?.ToString() ?? string.Empty}\nTemplate Parameters: {template_parameters?.ToString() ?? string.Empty}");
 
             var resources = fragment!.TryGetPropertyValue("Resources", out var rs) ? (rs as JsonObject)! 
                 : throw new InvalidDataException("Request fragment is missing the Resources property."); 
