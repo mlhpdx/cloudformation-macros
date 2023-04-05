@@ -1,0 +1,39 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": [
+    "AWS::Serverless-2016-10-31"
+  ],
+  "Description": "Setup cloudformation macros that help simplify other templates in this solution. This is a 'global' template (deploy in us-west-2 only).",
+  "Resources": {
+    "ForEach": {
+      "Type": "AWS::CloudFormation::Macro",
+      "Properties": {
+        "Name": "ForEach",
+        "Description": "Creates copies of a resource for each value in a given string list parameter. Use '%d' for the index number and %v for the value.",
+        "FunctionName": {
+          "Fn::Sub": "${ForEachLambda.Arn}"
+        }
+      }
+    },
+    "ForEachLambda": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "Runtime": "dotnet6",
+        "MemorySize": 1024,
+        "Handler": "for-each-macro-lambda::Cppl.ForEachMacro.Function::FunctionHandler",
+        "CodeUri": "../for-each-macro-lambda",
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "ForEachMacroName": {
+      "Description": "The name of the 'For Each' macro to be included in 'Transform' of templates.",
+      "Value": {
+        "Ref": "ForEach"
+      }
+    }
+  }
+}
