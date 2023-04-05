@@ -29,7 +29,8 @@ public class Function
             var account = request.TryGetPropertyValue("accountId", out var b) == true ? b as JsonValue 
                 : throw new InvalidDataException("Request is missing account.");
                             
-            var fragment = request.TryGetPropertyValue("fragment", out var o) == true ? o as JsonObject 
+            // we're going to mutate `fragment` and use it in the response, so disconnect it from the request
+            var fragment = request.Remove("fragment", out var f) ? f as JsonObject
                 : throw new InvalidDataException("Request is missing fragment.");
 
             var template_parameters = request.TryGetPropertyValue("templateParameterValues", out var tp) ? tp as JsonObject
