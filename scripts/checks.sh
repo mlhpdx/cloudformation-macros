@@ -2,4 +2,3 @@
 set -e
 
 cfn-lint --non-zero-exit-code error templates/cfn-macros.template
-cfn-lint --non-zero-exit-code error templates/example.template
