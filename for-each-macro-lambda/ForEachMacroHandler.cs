@@ -8,6 +8,7 @@ using Amazon.Lambda.Core;
 namespace Cppl.ForEachMacro;
 
 public static class Extensions {
+    public static string MakeSubstitutions(this string text, int i, string v) => text.Replace("%d", $"{i}").Replace("%v", v.Trim());
 }
 
 public class Function
@@ -58,8 +59,8 @@ public class Function
                     var parameter = (string)fe!;
                     var list = (string)template_parameters![parameter]!;
                     foreach((string v, int i) in list.Split(",", StringSplitOptions.RemoveEmptyEntries).Select((v, i) => (v, i))) {
-                        var instance = text.Replace("%d", $"{i}").Replace("%v", v.Trim());
-                        resources[$"{name}i"] = JsonObject.Parse(instance);
+                        var instance = text.MakeSubstitutions(i, v);
+                        resources[name.MakeSubstitutions(i, v)] = JsonObject.Parse(instance);
                     }
                 }
             }
