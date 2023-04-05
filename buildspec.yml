@@ -11,7 +11,5 @@ phases:
     commands:
       - scripts/checks.sh
       - sam build --template-file templates/cfn-macros.template
-      - sam package --s3-bucket ${BUCKET_NAME_PREFIX}-us-west-2 --s3-prefix ${BUCKET_KEY_PREFIX}/email-service/${CODEBUILD_RESOLVED_SOURCE_VERSION} --region us-west-2 > cfn-macros.template.published
-      - more cfn-macros.template.published
-      - sam deploy --stack-name cfn-macros --no-fail-on-empty-changeset --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND --region us-west-2
+      - sam deploy --s3-bucket ${BUCKET_NAME_PREFIX}-us-west-2 --s3-prefix ${BUCKET_KEY_PREFIX}/email-service/${CODEBUILD_RESOLVED_SOURCE_VERSION} --stack-name cfn-macros --no-fail-on-empty-changeset --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND --region us-west-2
 
