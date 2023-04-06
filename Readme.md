@@ -1,6 +1,6 @@
 # Cloudformation Macros
 
-This repo contains macros that help me create more concise templates.  AWS provides some macros and tranformations as well, but they don't cover some obvious use cases.  See below for details on the macros herewithin.
+This repo contains macros that help me create more concise templates.  AWS provides [some macros and tranformations](https://github.com/aws-cloudformation/aws-cloudformation-macros) as well, but they don't cover some obvious use cases.  See below for details on the macros herewithin.
 
 ## Deployment
 
