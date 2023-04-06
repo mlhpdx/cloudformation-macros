@@ -19,7 +19,7 @@
     "A%d": {
         "Type": "AWS::S3::Bucket",
         "Properties": {
-            "Name": "random-bucket-for-lee-%v"
+            "BucketName": "random-bucket-for-lee-%v"
         },
         "ForEach": "ListA"
     },
