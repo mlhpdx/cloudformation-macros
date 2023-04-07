@@ -8,7 +8,10 @@ using Amazon.Lambda.Core;
 namespace Cppl.ForEachMacro;
 
 public static class Extensions {
-    public static string MakeSubstitutions(this string text, int i, string v) => text.Replace("%d", $"{i}").Replace("%v", v.Trim());
+    public static string MakeSubstitutions(this string text, int i, string v) {
+        if (text.Contains("%")) return text.Replace("%d", $"{i}").Replace("%v", v.Trim());
+        else return $"{text}{i}";
+    }
 }
 
 public class Function
