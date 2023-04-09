@@ -8,10 +8,18 @@ using Amazon.Lambda.Core;
 namespace Cppl.ForEachMacro;
 
 public static class Extensions {
-    public static string MakeSubstitutions(this string text, int i, string v) {
-        if (text.Contains("%")) return text.Replace("%d", $"{i}").Replace("%v", v.Trim());
-        else return $"{text}{i}";
-    }
+    public static string MakeResourceContentSubstitutions(this string text, int i, string v) =>
+        text.Replace("%d", $"{i}").Replace("%v", v.Trim());
+
+    public static string MakeResourceNameSubstitutions(this string text, string suffix) =>
+        $"{text}{GetSafe(suffix)}";
+
+    private static string GetSafe(string v) =>
+        v.Aggregate((text: string.Empty, is_cap: false), (a, c) => c switch
+        {
+            char when Char.IsLetterOrDigit(c) => (a.text + (a.is_cap ? Char.ToUpper(c) : c), false),
+            _ => (a.text + ' ', true)
+        }).text.Replace(" ", string.Empty);
 }
 
 public class Function
@@ -61,11 +69,19 @@ public class Function
 
                     var text = resource.ToString();
 
-                    var parameter = (string)fe!;
+                    var parameter = fe switch { 
+                        JsonValue => (string)fe!, 
+                        JsonObject o when o.TryGetPropertyValue("List", out var n) => (string)n!,
+                        _ => throw new Exception("Bad configuration.") 
+                    };
+                    var use_index = fe switch {
+                        JsonObject o when o.TryGetPropertyValue("List", out var n) => string.Equals("Index", (string)n!),
+                        _ => false
+                    };
                     var list = template_parameters![parameter]! as JsonArray;
                     foreach((string v, int i) in list!.Select((v, i) => ((string)v!, i))) {
-                        var instance = text.MakeSubstitutions(i, v);
-                        resources[name.MakeSubstitutions(i, v)] = JsonObject.Parse(instance);
+                        var instance = text.MakeResourceContentSubstitutions(i, v);
+                        resources[name.MakeResourceNameSubstitutions(use_index ? $"{i}" : v)] = JsonObject.Parse(instance);
                     }
                 }
             }
