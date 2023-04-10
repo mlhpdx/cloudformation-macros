@@ -75,7 +75,7 @@ public class Function
                         _ => throw new Exception("Bad configuration.") 
                     };
                     var use_index = fe switch {
-                        JsonObject o when o.TryGetPropertyValue("List", out var n) => string.Equals("Index", (string)n!),
+                        JsonObject o when o.TryGetPropertyValue("ResourceKeySuffix", out var n) => string.Equals("Index", (string)n!),
                         _ => false
                     };
                     var list = template_parameters![parameter]! as JsonArray;
