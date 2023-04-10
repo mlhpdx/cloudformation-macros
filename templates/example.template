@@ -25,9 +25,6 @@
     },
     "B": {
       "Type": "AWS::Serverless::SimpleTable",
-      "DependsOn": [
-        "A%d"
-      ],
       "Properties": {
         "PrimaryKey": {
           "Type": "String",
@@ -35,8 +32,8 @@
         }
       },
       "ForEach": {
-        "List": "ListA",
-        "ResourceKeySuffix": "Index" // default is "Value"
+        "List": "ListB",
+        "ResourceKeySuffix": "Index"
       }
     }
   }
