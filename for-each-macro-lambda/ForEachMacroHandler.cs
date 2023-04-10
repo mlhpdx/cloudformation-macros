@@ -15,7 +15,7 @@ public static class Extensions {
         $"{text}{GetSafe(suffix)}";
 
     private static string GetSafe(string v) =>
-        v.Aggregate((text: string.Empty, is_cap: false), (a, c) => c switch
+        v.Aggregate((text: string.Empty, is_cap: true), (a, c) => c switch
         {
             char when Char.IsLetterOrDigit(c) => (a.text + (a.is_cap ? Char.ToUpper(c) : c), false),
             _ => (a.text + ' ', true)
