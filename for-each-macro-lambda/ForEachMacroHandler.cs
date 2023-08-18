@@ -1,5 +1,4 @@
 ﻿// Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using Amazon.Lambda.Core;
 
@@ -17,7 +16,7 @@ public static class Extensions {
     private static string GetSafe(string v) =>
         v.Aggregate((text: string.Empty, is_cap: true), (a, c) => c switch
         {
-            char when Char.IsLetterOrDigit(c) => (a.text + (a.is_cap ? Char.ToUpper(c) : c), false),
+            char when char.IsLetterOrDigit(c) => (a.text + (a.is_cap ? char.ToUpper(c) : c), false),
             _ => (a.text + ' ', true)
         }).text.Replace(" ", string.Empty);
 }
@@ -81,7 +80,7 @@ public class Function
                     var list = template_parameters![parameter]! as JsonArray;
                     foreach((string v, int i) in list!.Select((v, i) => ((string)v!, i))) {
                         var instance = text.MakeResourceContentSubstitutions(i, v);
-                        resources[name.MakeResourceNameSubstitutions(use_index ? $"{i}" : v)] = JsonObject.Parse(instance);
+                        resources[name.MakeResourceNameSubstitutions(use_index ? $"{i}" : v)] = JsonNode.Parse(instance);
                     }
                 }
             }
@@ -92,7 +91,7 @@ public class Function
                 [ "fragment" ] = fragment
             };
         } catch (Exception e) {
-            await Console.Out.WriteLineAsync($"Runtime Error: {e.ToString()}");
+            await Console.Out.WriteLineAsync($"Runtime Error: {e}");
             return new() {
                 [ "requestId" ] = $"{request_id}",
                 [ "status"] = "FAILURE"
