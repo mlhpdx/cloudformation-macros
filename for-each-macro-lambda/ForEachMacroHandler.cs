@@ -1,4 +1,5 @@
 ﻿// Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Amazon.Lambda.Core;
 
@@ -6,20 +7,7 @@ using Amazon.Lambda.Core;
 
 namespace Cppl.ForEachMacro;
 
-public static class Extensions {
-    public static string MakeResourceContentSubstitutions(this string text, int i, string v) =>
-        text.Replace("%d", $"{i}").Replace("%v", v.Trim());
 
-    public static string MakeResourceNameSubstitutions(this string text, string suffix) =>
-        $"{text}{GetSafe(suffix)}";
-
-    private static string GetSafe(string v) =>
-        v.Aggregate((text: string.Empty, is_cap: true), (a, c) => c switch
-        {
-            char when char.IsLetterOrDigit(c) => (a.text + (a.is_cap ? char.ToUpper(c) : c), false),
-            _ => (a.text + ' ', true)
-        }).text.Replace(" ", string.Empty);
-}
 
 public class Function
 {
@@ -55,35 +43,8 @@ public class Function
             await Console.Out.WriteLineAsync($"\nRequest ID {request_id}\nTransform ID: {transform_id}");
             await Console.Out.WriteLineAsync($"\nFragment {fragment?.ToString() ?? string.Empty}\nTemplate Parameters: {template_parameters?.ToString() ?? string.Empty}");
 
-            var resources = fragment!.TryGetPropertyValue("Resources", out var rs) ? (rs as JsonObject)! 
-                : throw new InvalidDataException("Request fragment is missing the Resources property."); 
-
-            foreach (var kv in resources!.ToArray()) {
-                var name = kv.Key;
-                var resource = kv.Value as JsonObject;
-                if (resource!.ContainsKey("ForEach")) {
-                    // value must be the name of a parameter that is a list of strings
-                    resources.Remove(name);
-                    resource.Remove("ForEach", out var fe);
-
-                    var text = resource.ToString();
-
-                    var parameter = fe switch { 
-                        JsonValue => (string)fe!, 
-                        JsonObject o when o.TryGetPropertyValue("List", out var n) => (string)n!,
-                        _ => throw new Exception("Bad configuration.") 
-                    };
-                    var use_index = fe switch {
-                        JsonObject o when o.TryGetPropertyValue("ResourceKeySuffix", out var n) => string.Equals("Index", (string)n!),
-                        _ => false
-                    };
-                    var list = template_parameters![parameter]! as JsonArray;
-                    foreach((string v, int i) in list!.Select((v, i) => ((string)v!, i))) {
-                        var instance = text.MakeResourceContentSubstitutions(i, v);
-                        resources[name.MakeResourceNameSubstitutions(use_index ? $"{i}" : v)] = JsonNode.Parse(instance);
-                    }
-                }
-            }
+            var paths = fragment!.FindForEachPaths().SortPathsByDepth();
+            fragment!.ExpandTemplatesAtPaths(template_parameters!, paths);
 
             return new() {
                 [ "requestId" ] = $"{request_id}",
