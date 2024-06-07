@@ -66,7 +66,7 @@ public static class Extensions
 
 	// extension method for a list of paths that sorts them by the number of elements in the path.
 	public static List<string> SortPathsByDepth(this List<string> paths) =>
-		paths.OrderBy(p => p.Split('.').Length).ToList();
+        [.. paths.OrderByDescending(p => p.Split('.').Length)];
 
 	// extension method for a JsonDocument that will print the objects at a list of paths within the document. 
 	public static void ExpandTemplatesAtPaths(this JsonNode doc, JsonNode parameters, List<string> paths)
