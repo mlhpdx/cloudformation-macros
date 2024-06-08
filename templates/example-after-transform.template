@@ -1,0 +1,92 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": [
+    "ForEach",
+    "AWS::Serverless-2016-10-31"
+  ],
+  "Description": "Example of using the ForEach macro.",
+  "Parameters": {
+    "ListA": {
+      "Type": "CommaDelimitedList",
+      "Default": "a, b, c"
+    },
+    "ListB": {
+      "Type": "CommaDelimitedList",
+      "Default": "X, YY, ZZZ"
+    },
+    "ListC": {
+      "Type": "CommaDelimitedList",
+      "Default": "path1, path2, path3"
+    }
+  },
+  "Resources": {
+    "AUsWest2": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": "random-bucket-for-lee-us-west-2",
+        "LifecycleConfiguration": {
+          "Rules": [
+            {
+              "ExpirationInDays": 7,
+              "Status": "Enabled",
+              "Prefix": "path1/"
+            },
+            {
+              "ExpirationInDays": 7,
+              "Status": "Enabled",
+              "Prefix": "path2/"
+            },
+            {
+              "ExpirationInDays": 7,
+              "Status": "Enabled",
+              "Prefix": "path3/"
+            }
+          ]
+        }
+      }
+    },
+    "AUsEast1": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": "random-bucket-for-lee-us-east-1",
+        "LifecycleConfiguration": {
+          "Rules": [
+            {
+              "ExpirationInDays": 7,
+              "Status": "Enabled",
+              "Prefix": "path1/"
+            },
+            {
+              "ExpirationInDays": 7,
+              "Status": "Enabled",
+              "Prefix": "path2/"
+            },
+            {
+              "ExpirationInDays": 7,
+              "Status": "Enabled",
+              "Prefix": "path3/"
+            }
+          ]
+        }
+      }
+    },
+    "B0": {
+      "Type": "AWS::Serverless::SimpleTable",
+      "Properties": {
+        "PrimaryKey": {
+          "Type": "String",
+          "Name": "table-0-key-foo.com"
+        }
+      }
+    },
+    "B1": {
+      "Type": "AWS::Serverless::SimpleTable",
+      "Properties": {
+        "PrimaryKey": {
+          "Type": "String",
+          "Name": "table-1-key-bar.com"
+        }
+      }
+    }
+  }
+}

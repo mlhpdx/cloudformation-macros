@@ -13,13 +13,27 @@
     "ListB": {
       "Type": "CommaDelimitedList",
       "Default": "X, YY, ZZZ"
+    },
+    "ListC": {
+      "Type": "CommaDelimitedList",
+      "Default": "path1, path2, path3"
     }
   },
   "Resources": {
     "A": {
       "Type": "AWS::S3::Bucket",
       "Properties": {
-        "BucketName": "random-bucket-for-lee-%v"
+        "BucketName": "random-bucket-for-lee-%v",
+        "LifecycleConfiguration": {
+          "Rules": [
+            {
+              "ExpirationInDays": 7,
+              "Status": "Enabled",
+              "Prefix": "%v/",
+              "ForEach": "ListC"
+            }
+          ]
+        }
       },
       "ForEach": "ListA"
     },
