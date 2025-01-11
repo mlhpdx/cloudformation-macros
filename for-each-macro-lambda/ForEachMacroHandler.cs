@@ -1,4 +1,4 @@
-﻿// Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
+// Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Amazon.Lambda.Core;
@@ -17,6 +17,8 @@ public class Function
 
     public async Task<JsonObject> FunctionHandler(JsonObject request, ILambdaContext context)
     {
+        await Console.Out.WriteLineAsync($"\nRequest {request?.ToString() ?? string.Empty}");
+
         var request_id = request?.TryGetPropertyValue("requestId", out var r) == true ? (string?)(r as JsonValue)
             : throw new InvalidDataException("Request is missing requestId.");
 
@@ -44,6 +46,8 @@ public class Function
             await Console.Out.WriteLineAsync($"\nFragment {fragment?.ToString() ?? string.Empty}\nTemplate Parameters: {template_parameters?.ToString() ?? string.Empty}");
 
             var paths = fragment!.FindForEachPaths().SortPathsByDepth();
+            await Console.Out.WriteLineAsync($"\nPaths:\n  {string.Join("\n  ", paths)}");
+
             fragment!.ExpandTemplatesAtPaths(template_parameters!, paths);
 
             return new() {
