@@ -1,4 +1,4 @@
-// Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
+﻿// Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Amazon.Lambda.Core;
