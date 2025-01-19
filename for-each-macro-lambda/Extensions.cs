@@ -151,16 +151,59 @@ public static class Extensions
 		var array = node switch
 		{
 			JsonObject s when s.TryGetPropertyValue("List", out var l) && l is JsonValue v => ResolveParameterNameToArray(parameters, v),
+			JsonObject s when s.TryGetPropertyValue("List", out var l) && l is JsonObject o => ResolveObjectToArray(doc, parameters, o),
 			JsonObject s when s.TryGetPropertyValue("Ref", out var l) && l is JsonValue v => ResolveParameterNameToArray(parameters, v),
 			JsonObject s when s.TryGetPropertyValue("Fn::Sub", out var l) && l is JsonValue v => ResolveParameterNameToArray(parameters, ResolveSubstitutions(parameters, v)),
-			JsonObject s when s.TryGetPropertyValue("Fn::FindInMap", out var f) && f is JsonArray p => GetNodeAtPath(doc["Mappings"] 
-				?? throw new Exception("No Mappings found in template."), p.Select(s => s!.GetValue<string>()).ToArray()).node switch {
-					JsonArray a => a,
-					_ => throw new Exception($"Mapping not found for Fn::FindInMap, or mapping value was not an array.")
+			JsonObject s when s.TryGetPropertyValue("Fn::FindInMap", out var f) => GetNodeAtPath(doc["Mappings"] 
+				?? throw new Exception("No Mappings found in template."), [.. ResolveNodeToArray(doc, parameters, f!)
+					.Select(s => ResolveNodeToString(doc, parameters, s!))]).node switch {
+						JsonArray a => a,
+						_ => throw new Exception($"Mapping not found for Fn::FindInMap, or mapping value was not an array.")
 				},
 			_ => throw new Exception($"Unsupported JObject for ForEach value (only List with value of string, Ref with value of string, Fn::Sub with a value of string and  Fn::FindInMap with value of array of strings are supported).")
 		};
 		return array;
+	}
+
+	private static JsonArray ResolveNodeToArray(JsonObject doc, JsonObject parameters, JsonNode node) =>
+		node switch
+		{
+			JsonArray a => a,
+			JsonObject o => ResolveObjectToArray(doc, parameters, o),
+			_ => throw new Exception("Unsupported node type.")
+		};
+
+    private static JsonArray ResolveParameterNameToArray(JsonNode parameters, JsonValue parameter_name)
+	{
+		return parameters[parameter_name.GetValue<string>() ?? throw new Exception($"Property 'ForEach' is a value but isn't a string.")]?.AsArray()
+			?? throw new Exception($"Parameter {parameter_name} could not be converted to an array (not a list?).");
+	}
+
+	private static string ResolveObjectToString(JsonObject doc, JsonObject parameters, JsonObject node) =>
+		node switch
+		{
+			JsonObject s when s.TryGetPropertyValue("Ref", out var l) && l is JsonValue v => ResolveParameterNameToString(parameters, v),
+			JsonObject s when s.TryGetPropertyValue("Fn::Sub", out var l) && l is JsonValue v => ResolveParameterNameToString(parameters, ResolveSubstitutions(parameters, v)),
+			JsonObject s when s.TryGetPropertyValue("Fn::FindInMap", out var f) => GetNodeAtPath(doc["Mappings"]
+				?? throw new Exception("No Mappings found in template."), ResolveNodeToArray(doc, parameters, f!).Select(s => ResolveNodeToString(doc, parameters, s!)).ToArray()).node switch {
+					JsonValue v => v.GetValue<string>(),
+					_ => throw new Exception($"Mapping not found for Fn::FindInMap, or mapping value was not a string.")
+				},
+			_ => throw new Exception($"Unsupported JObject for ForEach value (only Ref with value of string, Fn::Sub with a value of string and  Fn::FindInMap are supported).")
+		};
+
+	private static string ResolveNodeToString(JsonObject doc, JsonObject parameters, JsonNode node) =>
+		node switch
+		{
+			JsonValue v => v.GetValue<string>(),
+			JsonObject o => ResolveObjectToString(doc, parameters, o),
+			_ => throw new Exception("Unsupported node type.")
+		};
+
+    private static string ResolveParameterNameToString(JsonNode parameters, JsonValue parameter_name)
+	{
+		return parameters[parameter_name.GetValue<string>() ?? throw new Exception($"Property 'ForEach' is a value but isn't a string.")]?.GetValue<string>()
+			?? throw new Exception($"Parameter {parameter_name} could not be converted to a string.");
 	}
 
     private static JsonValue ResolveSubstitutions(JsonObject parameters, JsonValue v)
@@ -171,10 +214,4 @@ public static class Extensions
 		}
 		return JsonValue.Create(pattern);
     }
-
-    private static JsonArray ResolveParameterNameToArray(JsonNode parameters, JsonValue parameter_name)
-	{
-		return parameters[parameter_name.GetValue<string>() ?? throw new Exception($"Property 'ForEach' is a value but isn't a string.")]?.AsArray()
-			?? throw new Exception($"Parameter {parameter_name} could not be converted to an array (not a list?).");
-	}
 }
