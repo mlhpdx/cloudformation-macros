@@ -5,13 +5,13 @@ This repo contains macros that help create more concise and easier to maintain C
 
 ## ForEach
 
-This macro is similar to the `Count` macro from AWS, but instead of simply using an incrementing number it allows you to specify a comma-deliminted list parameter to instantiate a "template" object once for each item in the list. The macro will replace the template object with the generated instances.
+This macro is similar to the `Fn::ForEach` macro in AWS SAM (aka. Language Extensions). It differs a little, adding the ability to dynamically build arrays as well as objects, and focuses on allowing you to specify a comma-deliminted list parameter to instantiate a "template" object once for each item in the list. The macro will replace the template object with the generated instances (so it works in objects for properties and in arrays for values).
 
 ### Template Object Syntax
 
-Any JSON object in the `Resources` section of your cloudformation can be a template.  To indicate that an object should be used as a template simply add a property to the object called `ForEach` and set it to the name of a parameter of type `CommaDelimitedList`. 
+Any JSON object within the `Resources` section of your Cloudformation file can be a template.  To indicate that an object should be used as a template simply add a property to the object called `ForEach` and set it to the name of a parameter of type `CommaDelimitedList`. 
 
-```json
+```jsonc
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Description": "Uses the ForEach macro to create buckets named 'bucket-a', 'bucket-b' and 'bucket-c'.",
@@ -19,7 +19,7 @@ Any JSON object in the `Resources` section of your cloudformation can be a templ
     "ForEach"
   ],
   "Parameters": {
-    "List": {
+    "List": { // source of values to use for template instances
       "Type": "CommaDelimitedList",
       "Default": "a, b, c"
     }
@@ -27,7 +27,7 @@ Any JSON object in the `Resources` section of your cloudformation can be a templ
   "Resources": {
     "MyBucket": {
       "Type": "AWS::S3::Bucket",
-      "ForEach": "List",
+      "ForEach": "List", // signal `MyBucket` is a template, reference to parameter
       "Properties": {
         "BucketName": "bucket-%v"
       }
@@ -36,11 +36,13 @@ Any JSON object in the `Resources` section of your cloudformation can be a templ
 }
 ```
 
-The value of the parameter should be a comma delimited list of values. The template will be instantiated once for each value in the list. When instantiating the template, appearances of `%v` in the template will be replaced with the item value, and appearances of `%d` replaced with the index of the item.
+The template will be instantiated once for each value in the list. When instantiating the template, appearances of `%v` in the template will be replaced with the item value, and appearances of `%d` replaced with the index of the item.  In the example above the template would create three buckets named `bucket-a`, `bucket-b` and `bucket-c` with logical identifiers `MyBucketa`, `MyBucketb` and `MyBucketc`, respectively.
 
 ### Template Objects as Property Values
 
-Using `%d` or `%v` placeholders in property keys presents a problem because resource logical keys MUST be alphanumeric. This would cause the template to fail validation using `cfn-lint` and prohibits deploying the template via AWS SAM, an alternative is needed. So `ForEach` allows you to use a valid alphanumeric key and choose to use either `%d` and `%v` as the implicit suffix for the keys of the patterned instances. The default behavior is to use `%v` as the suffix for the keys (safer than index, see the [words of caution](#caveats), below), but adding a property to the `ForEach` object called `ResourceKeySuffix` and setting it to either `Index` or `Value`:
+Using `%d` or `%v` placeholders in property keys causes `cfn-lint` to complain because resource logical keys MUST be alphanumeric. If the template fails validation AWS SAM prohibits deploying the template, so an alternative was needed. 
+
+Our solution is that `ForEach` allows you to use a valid alphanumeric key and choose to use either `%d` and `%v` as the **implicit suffix** for the keys of the patterned instances. The default behavior is to use `%v` (the value from the list) as the suffix for the keys (this is safer than using the index, see the [words of caution](#caveats), below). To specify the behavior, add the property `ResourceKeySuffix` to the `ForEach` object called and set it to either `Index` or `Value`:
 
 ```json
 {
@@ -69,12 +71,65 @@ Using `%d` or `%v` placeholders in property keys presents a problem because reso
   }
 }
 ```
+The above template will create buckets with the names `bucket-a`, `bucket-b` and `bucket-c` with logical identifiers `MyBucket1`, `MyBucket2` and `MyBucket3`, respectively.
 
 ### Template Objects in Arrays
 
-Templates may also be placed in arrays, in which case the template will be replaced with the generated instances and other pre-existing items in the array will be left in place.
+Templates may also be placed in arrays, in which case the template will be replaced with the generated instances. Other pre-existing items in the array will be left in place. For example:
 
-### Example Template
+```jsonc
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Same as above, but property names (keys) are suffixed with indexes.",
+  "Transform": [ 
+    "ForEach"
+  ],
+  "Parameters": {
+    "AdditionalAttributeNames": {
+      "Type": "CommaDelimitedList",
+      "Default": "MyAttribute1, MyAttribute2"
+    }
+  },
+  "Resources": {
+    "MyTable": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        ...,
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "PK",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "SK",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "%v",
+            "AttributeType": "S",
+            "ForEach": "AdditionalAttributeNames"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "PK",
+            "KeyType": "HASH"
+          },
+          {
+            "AttributeName": "SK",
+            "KeyType": "RANGE"
+          }
+        ]
+      }
+    }
+  }
+}
+```
+
+The above temlate will create a table with fixed keys `PK` and `SK` and zero or more additional attributes as specified in the `AdditionalAttributeNames` parameter.  This isn't possible with the AWS SAM `Fn::ForEach` macro and is the primary reason this alternative exists.
+
+### Example Template Explainer
+
 The `ForEach` macro allows for more concise and easier to maintain templates. A simple example of which you can see in [example.template](templates/example.template), where there is a bit going on:
 
 * Three template parameters of type CommaDelimitedList are declared.  
