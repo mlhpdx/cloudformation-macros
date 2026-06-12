@@ -18,7 +18,7 @@
     "ForEachLambda": {
       "Type": "AWS::Serverless::Function",
       "Properties": {
-        "Runtime": "dotnet8",
+        "Runtime": "dotnet10",
         "MemorySize": 1024,
         "Handler": "for-each-macro-lambda::Cppl.ForEachMacro.Function::FunctionHandler",
         "CodeUri": "../for-each-macro-lambda",
